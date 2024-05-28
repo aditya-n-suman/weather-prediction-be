@@ -1,0 +1,89 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/aditya-n-suman/weather-prediction-be.git', description: 'Git repository URL')
+        string(name: 'GIT_CREDENTIALS_ID', defaultValue: 'git-token', description: 'Credentials ID for accessing Git repository')
+        string(name: 'NODE_ENV', defaultValue: 'production', description: 'Node environment')
+        string(name: 'DOCKER_IMAGE', defaultValue: 'weather-prediction-app', description: 'Docker image name')
+        string(name: 'DOCKER_TAG', defaultValue: 'latest', description: 'Docker image tag')
+    }
+
+    environment {
+        NODE_ENV = "${params.NODE_ENV}"
+        DOCKER_IMAGE = "${params.DOCKER_IMAGE}"
+        DOCKER_TAG = "${params.DOCKER_TAG}"
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: "${params.GIT_CREDENTIALS_ID}", variable: 'GIT_TOKEN')]) {
+                        sh 'git clone https://${GIT_TOKEN}@${params.GIT_REPO_URL}'
+                    }
+                }
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    sh 'npm test'
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withCredentials([string(credentialsId: 'API_KEY_CREDENTIAL_ID', variable: 'API_KEY')]) {
+                    sh '''
+                    docker run -d --name ${APP_NAME} \
+                        -p 3001:3001 \
+                        -e NODE_ENV=${params.NODE_ENV} \
+                        -e APP_ID=${API_KEY} \
+                        ${APP_NAME}:${IMAGE_TAG}
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build, Dockerize, and Deployment successful!'
+        }
+        failure {
+            echo 'Build, Dockerize, or Deployment failed!'
+        }
+        always {
+            script {
+                sh 'docker rm -f $(docker ps -aq -f name=weather-prediction-app) || true'
+            }
+        }
+    }
+}
