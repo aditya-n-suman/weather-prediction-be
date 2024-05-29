@@ -1,12 +1,15 @@
-export class DataResponseDto {
+export class BaseResponse {
   code: number;
   message?: string;
+}
+
+export class DataResponseDto extends BaseResponse {
   data?: ResponseData | null;
 }
 
 export class ResponseData {
   city: City;
-  temperatures: Weather[];
+  forecasts: DayWeather[];
 }
 
 export class City {
@@ -15,23 +18,18 @@ export class City {
   timezone: number;
 }
 
-export class Weather {
+export class DayWeather {
   date: string;
   minTemp: number;
   maxTemp: number;
-  hourlyDistribution: TempSummary[];
-  suggestion?: Suggestion;
+  hourlyDistribution: HourlyWeather[];
+  alerts?: string[];
 }
 
-export class Suggestion {
-  msg: string;
-  icon: string;
-}
-
-export class TempSummary {
+export class HourlyWeather {
   startTime: string;
   min: number;
   max: number;
-  weather: string;
+  summary: string;
   icon: string;
 }

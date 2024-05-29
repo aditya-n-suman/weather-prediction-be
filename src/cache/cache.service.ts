@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ResponseData } from 'src/data/dto/data-response.dto';
+import { ResponseData } from 'src/weather/dto/weather-response.dto';
 
 type CacheData = Record<string, ResponseData>;
 
